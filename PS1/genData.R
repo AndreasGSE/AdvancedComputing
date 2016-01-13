@@ -5,7 +5,7 @@ if (!require("ggplot2")) install.packages("ggplot2"); library(ggplot2)
 # Generating a set of data where each category has two focii, so the correct
 # separation would be a cross (for two categories)
 # Can specify the mean, sigma and number of categories. Only 2D allowed
-genData <- function(n = 1, seed = NA, muXY = c(0.5,0.5), sigmaXY = 0.1*diag(2), cat = 2,
+genData <- function(n = 100, seed = NA, muXY = c(0.5,0.5), sigmaXY = 0.1*diag(2), cat = 2,
                     csv = TRUE, pdf = TRUE){
   if(!is.na(seed)) set.seed(seed)
   probData <- matrix(0,n,2*cat) # Creating a blank matrix for the data

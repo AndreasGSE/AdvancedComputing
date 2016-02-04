@@ -108,28 +108,19 @@ x2 <- x1
 grid <- expand.grid(x = x1, y = x2)
 
 # Have to predict labels on the grid
-grid$predLabels <- kNN(loanDF[,c(1,2)], test = grid, loanDF$cat, 5, 1)[,1]
+grid$predLabels <- kNN(loanDF[,c(1,2)], test = grid, loanDF$cat, 10, 1)[,1]
 
 grid$predLabels <- as.integer(grid$predLabels)
-contMat <- matrix(grid$predLabels, length(x1), length(x2))
 
 # Plotting contour
 pdf("plot.pdf")
-plot(loanPreds$x, loanPreds$y, col = ifelse(loanPreds$cat == 1, "red", "black"))
-contour(x1,x2,contMat, labels = "", lwd = 0.5,add = T)
+print(ggplot(data = loanPreds, aes(x = x, y = y, colour = as.factor(cat), z = predLabels)) +
+        geom_point() +
+        xlab("x value") +
+        ylab("y value") +
+        theme_bw() +
+        stat_contour(data = grid, binwidth = 1, colour = "black", 
+                     aes(x = x, y = y, z = predLabels)))
 dev.off()
 
-# Some ggplot code that currently doesn't work, unsure why
-# ggplot(data = grid, aes(x = x, y = y, colour = as.factor(predLabels)))+
-#   geom_point(size = 0.000001) +
-#   scale_fill_manual(values = c('red', 'black')) +
-#   stat_contour(data = grid, aes(x = x, y = y, z = predLabels), breaks = c(0,0.5)) +
-#   geom_point(data = loanPreds, aes(x = x, y = y, colour = as.factor(cat))) +
-#   scale_colour_manual(values = c("red","black")) +
-#   xlab("x value") +
-#   ylab("y value")
-#   
-# ggplot(data = grid, aes(x = x, y = y, colour = as.factor(predLabels)))+
-#   geom_point(size = 0.000001) +
-#   scale_fill_manual(values = c('red', 'black')) +
-#   stat_density2d(aes(z = predLabels),geom = "path", breaks = c(0.5))
+  

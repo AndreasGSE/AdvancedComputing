@@ -1,9 +1,9 @@
 library(ggplot2)
 library(mvtnorm)
-install.packages("shiny")
-install.packages('devtools')
-devtools::install_github('rstudio/shinyapps')
-devtools::install_github('rstudio/rsconnect')
+#install.packages("shiny")
+#install.packages('devtools')
+#devtools::install_github('rstudio/shinyapps')
+#devtools::install_github('rstudio/rsconnect')
 
 # Sigma function
 sigmaXY <- function(rho, sdX, sdY) {

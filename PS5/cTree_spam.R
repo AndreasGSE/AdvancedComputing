@@ -19,7 +19,7 @@ cTree <- function(formula, data, test, depth, minPoints = 1, costFnc = c("Entrop
   }
   
   
-  # Defining an error function that takes a vectot of probabilities
+  # Defining an error function that takes a matrix of probabilities
   getError <- function(prob, costFnc){
     if(costFnc == "Entropy") e <- -1 * sum(prob * log(prob))
     if(costFnc == "Gini") e <- sum(prob * (1 - prob))
@@ -28,9 +28,9 @@ cTree <- function(formula, data, test, depth, minPoints = 1, costFnc = c("Entrop
     return(e)
   }
   
-  # Function to find best threshold
   findThreshold <- function(x, y, minPoints){
-    # Want to work with the UNIQUE numerical representations to save time
+    
+    # Want to work with the UNIQUE numerical representations
     vals <- unique(as.numeric(x))
     errors <- sapply(vals, function(val){
       # Seeing the most popular classifications
@@ -42,10 +42,10 @@ cTree <- function(formula, data, test, depth, minPoints = 1, costFnc = c("Entrop
         return(err)
       } 
       
-      probL <- popL / length(y[x < val]) # getting probabilities
+      probL <- popL / length(y[x < val])
       probR <- popR / length(y[x >= val])
       
-      err <- getError(c(probL[1], probR[1]), costFnc) # getting error
+      err <- getError(c(probL[1], probR[1]), costFnc) # NOT SURE IF CORRECT
       
       return(err)
     })
@@ -61,7 +61,6 @@ cTree <- function(formula, data, test, depth, minPoints = 1, costFnc = c("Entrop
     return(list(thresh = thresh, err = min(errors), split = splitPredictions))
   }
   
-  # Here we actually get the tree and define the recursion
   getTree <- function(trainData, testData, indLR, indLR.test, target, nodes, minPoints, depth){
     # At start so that we count the number of splits
     nodes <- nodes + 1
@@ -73,8 +72,8 @@ cTree <- function(formula, data, test, depth, minPoints = 1, costFnc = c("Entrop
     err.ind <- which.min(unlist(results[,2])) # return index of lowest error - also gets column
     best.thresh <- results[err.ind, 1] # get threshold
     
-
-    # Split the data using true / false labels - will be fed back in to keep track of splits
+    
+    # Split the data using true / false labels
     indL <- ifelse(trainData[, err.ind] >= best.thresh | !indLR, FALSE, TRUE)
     indR <- ifelse(trainData[, err.ind] < best.thresh | !indLR, FALSE, TRUE)
     
@@ -138,7 +137,7 @@ cTree <- function(formula, data, test, depth, minPoints = 1, costFnc = c("Entrop
     }
     
     return(list(pointsList = pointsList, labelList = labelList, probList = probList))
-  
+    
     
   }
   
@@ -167,3 +166,52 @@ cTree <- function(formula, data, test, depth, minPoints = 1, costFnc = c("Entrop
   
   return(list(predLabels = predLabs, prob = probs))
 }
+getError <- function(prob, costFnc){
+  if(costFnc == "Entropy") e <- -1 * sum(prob * log(prob))
+  if(costFnc == "Gini") e <- sum(prob * (1 - prob))
+  if(costFnc == "ME") e <- 1 - max(prob)
+  
+  return(e)
+}
+
+spamData <- read.table("spambase.data", sep = ",")
+names <- read.table("spambase.names", comment.char = "|", skip = 4, sep = ":")
+names <- row.names(names)
+names(spamData) <- c(names, "spam")
+
+samp <- sample(1:nrow(spamData), 500) # only used a few to not take too long
+sampT <- sample(1:nrow(spamData), 100)
+
+trainSpam <- spamData[samp,]
+testSpam <- spamData[sampT,]
+
+form <- as.formula("spam~.")
+
+myError <- rep(0, length(depths))
+packError <- rep(0, length(depths))
+
+depths <- c(5, 10, 15, 20, 30)
+
+for(i in 1:length(depths)){
+  result <- cTree(form, trainSpam, testSpam, depth = depths[i], minPoints = 20)
+  myPred <- as.numeric(result$predLabels)
+  myError[i] <- mean(ifelse(myPred == testSpam$spam, 1, 0))
+  
+  packageTree <- rpart(formula = form, data = trainSpam, method = "class", 
+                       control = rpart.control(maxdepth = depths[i], minsplit = 20))
+  prediction <- predict(packageTree, testSpam, type = "class")
+  packError[i] <- mean(ifelse(prediction == testSpam$spam, 1, 0))
+}
+
+error <- data.frame(Depth = depths, myError = myError, packageError = packError)
+
+library(ggplot2)
+
+pdf("cTree.pdf")
+print(ggplot(data = error, aes(x = Depth, y = myError, colour = "Mine")) +
+  geom_point(size = 2) +
+  geom_point(aes(x = Depth, y = packageError, colour = "rpart")) +
+  scale_colour_manual(values = c("Mine" = "red", "rpart" = "blue"), name = "Function") +
+  theme_bw() +
+  ylab("Error"))
+dev.off()
